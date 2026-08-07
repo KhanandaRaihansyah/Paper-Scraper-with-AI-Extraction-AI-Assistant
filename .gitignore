@@ -1,0 +1,16 @@
+# Environment
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Database
+database/*.db
+
+# Downloads & Exports
+downloads/
+exports/
+
+# IDE
+.vscode/
+.idea/

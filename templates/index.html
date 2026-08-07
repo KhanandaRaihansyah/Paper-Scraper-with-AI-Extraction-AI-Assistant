@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Scraper</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div id="toastContainer"></div>
+    <div class="container">
+        <header>
+            <h1>📄 Paper Scraper</h1>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'search-tab')">Pencarian</button>
+            <button class="tab-btn" onclick="switchTab(event, 'history-keyword'); loadKeywordsHistory()">Riwayat per Keyword</button>
+            <button class="tab-btn" onclick="switchTab(event, 'history-all'); loadAllHistory()">Riwayat Semua</button>
+            <button class="tab-btn" style="background-color: #8b5cf6; color: white;" onclick="switchTab(event, 'extractions-tab'); loadExtractions()">✨ Hasil Ekstraksi AI</button>
+            <button class="tab-btn" style="background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; font-weight: bold;" onclick="switchTab(event, 'chat-tab'); checkChatStatus()">🤖 Ask AI Assistant (RAG)</button>
+        </nav>
+
+        <!-- TAB PENCARIAN -->
+        <section id="search-tab" class="tab-content active">
+            <div class="card">
+                <form id="scrapeForm">
+                    <div class="form-group">
+                        <label for="keyword">Keyword:</label>
+                        <input type="text" id="keyword" required placeholder="Contoh: machine learning healthcare">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="amount">Jumlah Paper:</label>
+                        <input type="number" id="amount" min="1" max="100" value="10" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sumber API Akademik:</label>
+                        <div class="radio-group" style="flex-wrap: wrap; gap: 12px;">
+                            <label><input type="radio" name="source" value="semantic_scholar"> Semantic Scholar</label>
+                            <label><input type="radio" name="source" value="arxiv"> arXiv</label>
+                            <label><input type="radio" name="source" value="ieee"> IEEE Xplore</label>
+                            <label><input type="radio" name="source" value="pubmed"> PubMed / Europe PMC</label>
+                            <label><input type="radio" name="source" value="crossref"> Crossref</label>
+                            <label><input type="radio" name="source" value="all" checked> 🌟 Semua Sumber (5 API)</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btnScrape" class="btn-primary">Mulai Scraping</button>
+                </form>
+            </div>
+
+            <!-- Area Progress (Disembunyikan awalnya) -->
+            <div id="progressArea" class="card hidden">
+                <h3>⏳ Sedang Memproses...</h3>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <p id="progressText">Memulai...</p>
+            </div>
+
+            <!-- Area Hasil (Disembunyikan awalnya) -->
+            <div id="resultArea" class="card hidden">
+                <div class="result-header">
+                    <h3>Hasil Scraping</h3>
+                    <div class="export-buttons">
+                        <button onclick="exportData('csv', currentSessionId)" class="btn-export">Export CSV</button>
+                        <button onclick="exportData('excel', currentSessionId)" class="btn-export">Export Excel</button>
+                        <button onclick="exportData('pdf-zip', currentSessionId)" class="btn-export">Download PDF (ZIP)</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="resultTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Judul</th>
+                                <th>
+                                    Abstrak <br>
+                                    <button type="button" class="btn-toggle-all" onclick="toggleAllAbstracts(this)">Buka Semua</button>
+                                </th>
+                                <th>Tahun</th>
+                                <th>Sumber</th>
+                                <th style="min-width: 140px;">
+                                    Aksi <br>
+                                    <button type="button" class="btn-toggle-all" style="background-color: #8b5cf6; color: white; border: none; font-weight: bold; margin-top: 6px;" onclick="extractAllInVisibleTab(this)">✨ Ekstrak Semua</button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB RIWAYAT PER KEYWORD -->
+        <section id="history-keyword" class="tab-content hidden">
+            <div class="card">
+                <h3>Daftar Keyword yang Pernah Di-scrape</h3>
+                <div id="keywordList" class="keyword-grid"></div>
+            </div>
+            <div id="keywordDetailArea" class="card hidden">
+                <div class="result-header">
+                    <h3 id="keywordDetailTitle">Detail Keyword</h3>
+                    <div class="export-buttons">
+                        <button onclick="exportData('csv', null, currentKeywordId)" class="btn-export">Export CSV</button>
+                        <button onclick="exportData('excel', null, currentKeywordId)" class="btn-export">Export Excel</button>
+                        <button onclick="exportData('pdf-zip', null, currentKeywordId)" class="btn-export">Download PDF (ZIP)</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="keywordDetailTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Judul</th>
+                                <th>
+                                    Abstrak <br>
+                                    <button type="button" class="btn-toggle-all" onclick="toggleAllAbstracts(this)">Buka Semua</button>
+                                </th>
+                                <th>Tahun</th>
+                                <th>Sumber</th>
+                                <th style="min-width: 140px;">
+                                    Aksi <br>
+                                    <button type="button" class="btn-toggle-all" style="background-color: #8b5cf6; color: white; border: none; font-weight: bold; margin-top: 6px;" onclick="extractAllInVisibleTab(this)">✨ Ekstrak Semua</button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB RIWAYAT SEMUA -->
+<!-- TAB RIWAYAT SEMUA -->
+        <section id="history-all" class="tab-content hidden">
+            <div class="card">
+                <div class="result-header">
+                    <h3>Semua Paper Tersimpan</h3>
+                    <div class="export-buttons">
+                        <!-- Kita seragamkan pemanggilannya menggunakan fungsi exportData() -->
+                        <button onclick="exportData('csv')" class="btn-export">Export CSV</button>
+                        <button onclick="exportData('excel')" class="btn-export">Export Excel</button>
+                        <button onclick="exportData('pdf-zip')" class="btn-export">Download PDF (ZIP)</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="allHistoryTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Judul</th>
+                                <th>
+                                    Abstrak <br>
+                                    <button type="button" class="btn-toggle-all" onclick="toggleAllAbstracts(this)">Buka Semua</button>
+                                </th>
+                                <th>Tahun</th>
+                                <th>Sumber</th>
+                                <th style="min-width: 140px;">
+                                    Aksi <br>
+                                    <button type="button" class="btn-toggle-all" style="background-color: #8b5cf6; color: white; border: none; font-weight: bold; margin-top: 6px;" onclick="extractAllInVisibleTab(this)">✨ Ekstrak Semua</button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+    <!-- TAB HASIL EKSTRAKSI AI -->
+        <section id="extractions-tab" class="tab-content hidden">
+            <div class="card">
+                <div class="result-header">
+                    <h3>Data Hasil Ekstraksi LLM (15 Kolom)</h3>
+                    <div class="export-buttons">
+                        <button onclick="exportExtractions('csv')" class="btn-export">Export CSV</button>
+                        <button onclick="exportExtractions('excel')" class="btn-export">Export Excel</button>
+                        <button onclick="exportExtractions('word')" class="btn-export" style="background-color: #2563eb; color: white;">Export Word (.docx)</button>
+                        <button onclick="exportExtractions('pdf-zip')" class="btn-export">Download PDF (ZIP)</button>
+                        <button onclick="exportRangkumanReview()" class="btn-export" style="background-color: #059669; color: white; font-weight: bold;">📊 Rangkuman Review</button>
+                    </div>
+                </div>
+
+                <!-- Live Filter & Search Toolbar (Modern UI/UX) -->
+                <div class="filter-toolbar" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; flex: 1;">
+                        <!-- Live Search Input -->
+                        <div style="position: relative; min-width: 220px; flex: 1;">
+                            <input type="text" id="extractionsSearchInput" oninput="filterExtractionsTable()" placeholder="🔍 Cari algoritma, dataset, judul, penulis..." style="width: 100%; padding: 8px 12px 8px 34px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
+                            <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem;">🔍</span>
+                        </div>
+
+                        <!-- Year Range Slider Filter -->
+                        <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <span style="font-size: 0.85rem; font-weight: 600; color: #475569;">📅 Min Tahun:</span>
+                            <span id="yearRangeMinLabel" style="font-size: 0.85rem; font-weight: bold; color: #2563eb;">2020</span>
+                            <input type="range" id="yearRangeSlider" min="2015" max="2026" value="2020" oninput="updateYearRangeFilter(this.value)" style="width: 100px; cursor: pointer;">
+                        </div>
+
+                        <!-- Keyword Filter Select -->
+                        <select id="keywordFilterSelect" onchange="filterExtractionsTable()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: white; font-weight: 600; color: #1e293b; cursor: pointer;">
+                            <option value="all">🔑 Semua Keyword Paper</option>
+                        </select>
+
+                        <!-- Relevance Filter Select -->
+                        <select id="relevanceFilterSelect" onchange="filterExtractionsTable()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: white; cursor: pointer;">
+                            <option value="all">Semua Relevance</option>
+                            <option value="ya">Relevan (Ya)</option>
+                            <option value="tidak">Tidak Relevan</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter Counter Badge -->
+                    <div id="filterCountBadge" style="font-size: 0.85rem; font-weight: 600; color: #1e293b; background: #e2e8f0; padding: 6px 14px; border-radius: 16px;">
+                        Menampilkan 0 Paper
+                    </div>
+                </div>
+
+                <!-- Kita beri fitur gulir horizontal karena kolomnya sangat banyak -->
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <table id="extractionsTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Relevance</th>
+                                <th>Systematic Review</th>
+                                <th>Judul</th>
+                                <th>Tahun</th>
+                                <th>Penulis</th>
+                                <th>Publisher</th>
+                                <th>Application</th>
+                                <th>System</th>
+                                <th>Algorithm</th>
+                                <th>Dataset</th>
+                                <th>Keyword</th>
+                                <th>Publication Type</th>
+                                <th>Journal Name</th>
+                                <th>Link Jurnal</th> <!-- TAMBAHAN BARU -->
+                                <th>Aksi PDF</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB ASK AI ASSISTANT (RAG / VECTOR DB CHAT) -->
+        <section id="chat-tab" class="tab-content hidden">
+            <div class="card">
+                <div class="result-header" style="border-bottom: 2px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 16px;">
+                    <div>
+                        <h2 style="margin: 0; color: #1e1b4b; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
+                            <span>🤖</span> AI Research Assistant (RAG Knowledge Base)
+                        </h2>
+                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 0.85rem;">
+                            Tanyakan apa saja terhadap repositori paper yang telah diekstrak secara otomatis dengan pemetaan sitasi empiris.
+                        </p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <!-- Keyword Selector Dropdown for RAG Chat -->
+                        <select id="chatKeywordSelect" onchange="onChatKeywordChange()" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: white; font-weight: 600; color: #1e1b4b; cursor: pointer;">
+                            <option value="all">🌐 Semua Keyword Paper</option>
+                        </select>
+                        <div id="chatStatusBadge" style="background-color: #e0e7ff; color: #3730a3; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">
+                            📚 Repositori: 0 Paper
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggested Questions Chips -->
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #4b5563; display: block; margin-bottom: 6px;">💡 Contoh Pertanyaan Cepat:</label>
+                    <div class="chip-container" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button type="button" class="chip-btn" onclick="useSampleQuestion('Apa saja algoritma & metode utama yang paling sering digunakan dalam repositori ini?')">💡 Algoritma Utama</button>
+                        <button type="button" class="chip-btn" onclick="useSampleQuestion('Bandingkan dataset dan jumlah sampel data yang dipakai di antara paper-paper ini.')">💡 Komparasi Dataset</button>
+                        <button type="button" class="chip-btn" onclick="useSampleQuestion('Apa saja keterbatasan (limitations) utama yang disebutkan dalam riset-riset ini?')">💡 Keterbatasan Riset</button>
+                        <button type="button" class="chip-btn" onclick="useSampleQuestion('Buatkan rangkuman kontribusi (novelty) utama per paper secara ringkas.')">💡 Rangkuman Novelty</button>
+                    </div>
+                </div>
+
+                <!-- Chat Box Display -->
+                <div id="chatBox" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; min-height: 320px; max-height: 500px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 14px;">
+                    <div class="chat-message bot-message">
+                        <div class="avatar">🤖</div>
+                        <div class="message-content">
+                            Halo! Saya <strong>AI Research Assistant</strong>. Saya siap membantu Anda menganalisis, membandingkan, dan merangkum seluruh koleksi paper yang telah Anda ekstrak.<br><br>
+                            Silakan pilih salah satu <strong>Contoh Pertanyaan Cepat</strong> di atas atau ketik pertanyaan khusus Anda di kolom bawah!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input Form -->
+                <form id="chatForm" style="display: flex; gap: 8px;">
+                    <input type="text" id="chatInput" placeholder="Ketik pertanyaan Anda di sini... (misal: Algoritma mana yang terbaik untuk efisiensi energi?)" required style="flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem;">
+                    <button type="submit" id="btnSendChat" style="background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <span>Kirim</span> 🚀
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
