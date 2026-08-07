@@ -7,8 +7,7 @@ General Overview:
 This screenshot displays the main interface of the Paper Scraper web application, specifically showing the Search (Pencarian) tab. The tool is designed to search, scrape, and aggregate academic research papers automatically from multiple scholarly databases via their respective APIs.
 UI Component Breakdown:
 
-1. Main Navigation Tabs (Top Bar):
-- Pencarian / Search (Active): The configuration form used to initiate a new paper scraping task.
+1. Main Navigation Tabs (Top Bar):- Pencarian / Search (Active): The configuration form used to initiate a new paper scraping task.
 - Riwayat per Keyword (History by Keyword): Displays past search records filtered by specific keywords.
 - Riwayat Semua (All History): Displays the complete log of all past search queries.
 - Hasil Ekstraksi AI (AI Extraction Results): Shows key data points and information extracted from scraped papers using AI models.
