@@ -12,3 +12,15 @@ UI Component Breakdown:
 - Riwayat Semua (All History): Displays the complete log of all past search queries.
 - Hasil Ekstraksi AI (AI Extraction Results): Shows key data points and information extracted from scraped papers using AI models.
 - Ask AI Assistant (RAG): A Retrieval-Augmented Generation (RAG) powered conversational interface that allows users to ask questions directly about the contents of the collected papers.
+
+2. Search Input Form:
+- Keyword: Text field to input research topics or search terms (e.g., machine learning healthcare).
+- Jumlah Paper (Number of Papers): Numerical input to set the limit of papers to fetch (default set to 10).
+- Sumber API Akademik (Academic API Sources): Selector for target database APIs, including:
+    - Semantic Scholar
+    - arXiv
+    - IEEE Xplore
+    - PubMed / Europe PMC
+    - Crossref
+    - Semua Sumber / All Sources (5 API) (Selected by default)
+- "Mulai Scraping" (Start Scraping) Button: Primary action button that triggers the scraping process based on the user's input parameters.
