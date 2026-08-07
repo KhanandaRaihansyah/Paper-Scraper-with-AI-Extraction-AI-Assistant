@@ -1,2 +1,2 @@
 # Paper-Scraper-with-AI-Extraction-AI-Assistant
-An automated academic paper scraping web app leveraging Semantic Scholar &amp; arXiv APIs. Features deduplication, publication year filtering, CSV/Excel export, and bulk PDF downloader (ZIP).
+Paper Scraper is a Python-based web application designed to streamline academic literature collection. Powered by Semantic Scholar and arXiv APIs, it automatically extracts paper metadata, enforces strict data validation and deduplication, filters publications from 2020 onwards, and provides seamless CSV/Excel exports alongside bulk PDF downloads packaged into a single ZIP file.
